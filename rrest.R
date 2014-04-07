@@ -5,6 +5,7 @@ require(httpuv)
 require(RJSONIO)
 
 restServer <- function(fun_env) {
+	
   function(env){
     method <- env[['REQUEST_METHOD']]
     resp   <- '{"null_response" : undefined}'	
@@ -12,7 +13,7 @@ restServer <- function(fun_env) {
 	  postfields <- rawToChar(env[['rook.input']]$read())
 	  postfields <- fromJSON(postfields)
 	  if(length(postfields) == 2){
-	    fun    <- exec_env[[postfields[['fun']]]]
+	    fun <- exec_env[[postfields[['fun']]]]
 	    if(!is.null(fun)){
 	      params <- postfields[['params']]
 	      resp   <- toJSON(fun(params))
@@ -25,11 +26,12 @@ restServer <- function(fun_env) {
 	}
 		
 	list(
-	  status = 200L,
+	  status  = 200L,
 	  headers = list('Content-Type' = 'JSON'),
-	  body = resp
+	  body    = resp
 	)	
   }
+  
 }
 
 
