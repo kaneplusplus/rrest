@@ -29,9 +29,8 @@ restServer <- function(fun_env) {
 	  status  = 200L,
 	  headers = list('Content-Type' = 'JSON'),
 	  body    = resp
-	)	
-  }
-  
+	)
+  }  
 }
 
 
