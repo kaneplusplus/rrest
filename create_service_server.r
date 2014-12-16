@@ -1,41 +1,37 @@
 source("service.r")
 
 # Define Sample Functions
-randomUniform <- function(p){
-  p <- lapply(p, as.numeric)
-  runif(p$n)
+randomUniform <- function(p) { UseMethod('randomUniform', p) }
+randomNormal  <- function(p) { UseMethod('randomNormal', p) }
+
+randomUniform.POST <- function(p){
+	p <- lapply(p, as.numeric)
+	runif(p$n)
+}
+randomUniform.GET <- function(p) {
+	runif(1)
+}
+randomUniform.default <- function(p) {
+	randomUniform.GET()
 }
 
-randomNormal <- function(p){
+randomNormal.POST <- function(p){
   p <- lapply(p, as.numeric)
   rnorm(p$n)
 }
+randomNormal.GET <- function(p) {
+	rnorm(1)
+}
+randomNormal.default <- function(p) {
+	randomNormal.GET()
+}
+
 
 # Add to environment
 fun_env <- new.env()
 assign('randomUniform', randomUniform, env = fun_env)
 assign('randomNormal', randomNormal, env = fun_env)
 
-call = function(req) {
-  resp   <- '{"null_response" : undefined}'
-  postfields <- fromJSON(req)
-  if(length(postfields) == 2){
-    fun <- fun_env[[postfields[['fun']]]]
-    if(!is.null(fun)){
-      params <- postfields[['params']]
-      resp   <- toJSON(fun(params))
-    } else { 
-      print('unsupported function!')
-    }
-  }
 
-  ret = list(
-    status  = 200L,
-    headers = list('Content-Type' = 'JSON'),
-    body    = resp
-  )
-  toJSON(ret)
-}
-
-
-start_service(rrest_socket_connection(), call)
+# Start server
+start_service(rrest_socket_connection(), fun_env)
