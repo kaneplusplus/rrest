@@ -11,6 +11,9 @@ rrest_socket_connection = function(host="localhost", port=9090, fail=TRUE) {
   conn
 }
 
+close.rrest_socket_connection = function(con, ...) {
+}
+
 next_request = function(conn) {
   UseMethod("next_request", conn)
 }
@@ -21,12 +24,13 @@ send_response = function(conn, x) {
 
 # Request parsing should be done here.
 next_request.rrest_socket_connection = function(conn) {
-  if (!is.null(conn$sock))
-    close(conn$sock)
-  conn$sock = make.socket(host=conn$host, port=conn$port, fail=conn$fail,
+  client_conn = make.socket(host=conn$host, port=conn$port, fail=conn$fail,
                           server=TRUE)
-  str = read.socket(conn$sock, maxlen=10000L)
-  
+  str = read.socket(client_conn, maxlen=10000L)
+  list(str=str, client_conn=client_conn)
+}
+
+parse_html_request = function(str) {  
   # I wonder if we should separate parsing from reading
   # because I'm guessing HTTP requests are going to look
   # the same no matter how we actuall receive them (sockets, 
@@ -47,46 +51,58 @@ next_request.rrest_socket_connection = function(conn) {
   req
 }
 
-send_response.rrest_socket_connection = function(conn, x) {
-  write.socket(conn$sock, x)
+send_response.socket = function(conn, x) {
+  print("message being sent to socket")
+  print(x)
+  write.socket(conn, x)
 }
 
-close.rrest_socket_connection = function(conn) {
-  close(conn$sock)
-  conn$sock = NULL
+call_gen = function(fun_env) {
+  function(req) {
+    ret = toJSON(
+      tryCatch({
+        fun <- fun_env[[req[['fun']]]]
+        print(fun)
+        if(!is.null(fun)){
+          body <- req[['body']]
+          if(!is.null(body)) {
+            class(body) <- c(class(body), class(req))
+          }
+          success(toJSON(fun(body)))
+        } else { 
+          method_not_found()
+        }
+      }, error = function(e) {
+        throw_error()
+      })
+    )
+    sub("\n", "", ret)
+  }
 }
 
-call = function(req, fun_env) {
-	toJSON(
-		tryCatch({
-			fun <- fun_env[[req[['fun']]]]
-			print(fun)
-			if(!is.null(fun)){
-				body <- req[['body']]
-				if(!is.null(body)) {
-					class(body) <- c(class(body), class(req))
-				}
-				success(toJSON(fun(body)))
-			} else { 
-				method_not_found()
-			}
-		}, error = function(e) {
-			throw_error()
-		})
-	)
-}
-
-start_service = function(conn, fun_env, callback=NULL, parallel=1, 
-                         max_num_requests=Inf) {
+start_service = function(conn, call, parse_input=function(x) x,
+                         format_output=function(x) x, callback=NULL, 
+                         parallel=1, max_num_requests=Inf) {
   if (parallel == 1) {
     i=1
     while(i <= max_num_requests) {
-      call_ret = call(next_request(conn), fun_env)
-      if (!is.null(call_ret))
-        send_response(conn, call_ret)
+      req = next_request(conn)
+      call_input = parse_input(req$str)
+      call_ret = call(call_input)
+      formatted_call_return = format_output(call_ret)
+      # get the next request
+      # fork
+      # server closes the socket and listens for next connection.
+      # child services the request
+      # child sends response
+      # child closes socket
+      # child dies
+      if (!is.null(formatted_call_return))
+        send_response(req$client_conn, call_ret)
       if (!is.null(callback))
         callback(call_ret)
-      close(conn)
+      close(req$client_conn)
+      i = i+1
     }
   }
 }
