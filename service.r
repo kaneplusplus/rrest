@@ -83,26 +83,44 @@ call_gen = function(fun_env) {
 start_service = function(conn, call, parse_input=function(x) x,
                          format_output=function(x) x, callback=NULL, 
                          parallel=1, max_num_requests=Inf) {
+  i=1
   if (parallel == 1) {
-    i=1
     while(i <= max_num_requests) {
       req = next_request(conn)
+      i = i+1
       call_input = parse_input(req$str)
       call_ret = call(call_input)
       formatted_call_return = format_output(call_ret)
-      # get the next request
-      # fork
-      # server closes the socket and listens for next connection.
-      # child services the request
-      # child sends response
-      # child closes socket
-      # child dies
       if (!is.null(formatted_call_return))
         send_response(req$client_conn, call_ret)
       if (!is.null(callback))
         callback(call_ret)
       close(req$client_conn)
+    }
+  } else {
+    # For now, parallel > 1 means we fork for each request and assume
+    # that the request is stateless.
+    while(i <= max_num_requests) {
+      req = next_request(conn)
       i = i+1
+      p = parallel:::mcfork(estranged=TRUE)
+      if (inherits(p, "masterProcess")) {
+        # This line need to change to a real rng
+        set.seed(as.integer(microbenchmark::get_nanotime()/1e7))
+        # child process code
+        call_input = parse_input(req$str)
+        call_ret = call(call_input)
+        formatted_call_return = format_output(call_ret)
+        if (!is.null(formatted_call_return))
+          send_response(req$client_conn, call_ret)
+        if (!is.null(callback))
+          callback(call_ret)
+        close(req$client_conn)
+        parallel:::mcexit()
+      } else {
+        # parent process code
+        close(req$client_conn)
+      }
     }
   }
 }

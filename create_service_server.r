@@ -35,4 +35,5 @@ assign('randomNormal', randomNormal, env = fun_env)
 
 # Start server
 start_service(rrest_socket_connection(), call_gen(fun_env), 
-              parse_input=parse_html_request, max_num_requests=1)
+              parse_input=parse_html_request, max_num_requests=Inf, parallel=2)
+
