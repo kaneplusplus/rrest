@@ -9,7 +9,7 @@ body <- toJSON(
 
 # POST and get response
 h <- basicTextGatherer()
-curlPerform(url = 'http://0.0.0.0:9090/randomNormal', 
+curlPerform(url = 'http://0.0.0.0:9090', 
 			postfields = body,
 			writefunction = h$update)
 
