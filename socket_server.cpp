@@ -22,7 +22,7 @@ Rcpp::XPtr<tcp_server> create_tcp_server(int port=9090)
 }
 
 // [[Rcpp::export]]
-Rcpp::XPtr<tcp::socket> get_next_request(SEXP p_server)
+Rcpp::XPtr<tcp::socket> asio_service_next_request(SEXP p_server)
 {
   Rcpp::XPtr<tcp_server> server(p_server);
   tcp::socket *socket = new tcp::socket(server->io_service);
@@ -31,7 +31,7 @@ Rcpp::XPtr<tcp::socket> get_next_request(SEXP p_server)
 }
 
 // [[Rcpp::export]]
-std::string get_message(SEXP p_socket)
+std::string asio_socket_read_message(SEXP p_socket)
 {
   Rcpp::XPtr<tcp::socket> sock(p_socket);
   std::string message;
@@ -41,9 +41,15 @@ std::string get_message(SEXP p_socket)
 }
 
 // [[Rcpp::export]]
-void send_message(SEXP p_socket, std::string message)
+void asio_socket_write_message(SEXP p_socket, std::string message)
 {
   Rcpp::XPtr<tcp::socket> sock(p_socket);
   sock->send(boost::asio::buffer(&message[0], message.size()));
 }
 
+// [[Rcpp::export]]
+void asio_socket_close(SEXP p_socket)
+{
+  Rcpp::XPtr<tcp::socket> sock(p_socket);
+  sock->close();
+}

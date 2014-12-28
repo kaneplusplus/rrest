@@ -2,33 +2,6 @@ library(parallel)
 library(RJSONIO)
 
 source('responses.R')
-rrest_socket_connection = function(host="localhost", port=9090, fail=TRUE) {
-  conn = new.env()
-  assign("host", host, conn)
-  assign("port", port, conn)
-  assign("fail", fail, conn)
-  class(conn) = c("service_connection", "rrest_socket_connection")
-  conn
-}
-
-close.rrest_socket_connection = function(con, ...) {
-}
-
-next_request = function(conn) {
-  UseMethod("next_request", conn)
-}
-
-send_response = function(conn, x) {
-  UseMethod("send_response", conn)
-}
-
-# Request parsing should be done here.
-next_request.rrest_socket_connection = function(conn) {
-  client_conn = make.socket(host=conn$host, port=conn$port, fail=conn$fail,
-                          server=TRUE)
-  str = read.socket(client_conn, maxlen=10000L)
-  list(str=str, client_conn=client_conn)
-}
 
 parse_html_request = function(str) {  
   # I wonder if we should separate parsing from reading
@@ -49,12 +22,6 @@ parse_html_request = function(str) {
   req = list(fun = endpoint, body = body)
   class(req) = c('character', meth)
   req
-}
-
-send_response.socket = function(conn, x) {
-  print("message being sent to socket")
-  print(x)
-  write.socket(conn, x)
 }
 
 call_gen = function(fun_env) {
@@ -92,7 +59,7 @@ start_service = function(conn, call, parse_input=function(x) x,
       call_ret = call(call_input)
       formatted_call_return = format_output(call_ret)
       if (!is.null(formatted_call_return))
-        send_response(req$client_conn, call_ret)
+        send_message(req$client_conn, call_ret)
       if (!is.null(callback))
         callback(call_ret)
       close(req$client_conn)
@@ -112,7 +79,7 @@ start_service = function(conn, call, parse_input=function(x) x,
         call_ret = call(call_input)
         formatted_call_return = format_output(call_ret)
         if (!is.null(formatted_call_return))
-          send_response(req$client_conn, call_ret)
+          send_message(req$client_conn, call_ret)
         if (!is.null(callback))
           callback(call_ret)
         close(req$client_conn)

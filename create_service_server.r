@@ -1,4 +1,5 @@
 source("service.r")
+source("tcp_service.r")
 
 # Define Sample Functions
 randomUniform <- function(p) { UseMethod('randomUniform', p) }
@@ -34,6 +35,6 @@ assign('randomNormal', randomNormal, env = fun_env)
 
 
 # Start server
-start_service(rrest_socket_connection(), call_gen(fun_env), 
-              parse_input=parse_html_request, max_num_requests=Inf, parallel=2)
+start_service(tcp_service(), call_gen(fun_env), 
+              parse_input=parse_html_request, max_num_requests=Inf, parallel=1)
 
