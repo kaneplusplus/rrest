@@ -1,43 +1,49 @@
-//#include <Rcpp11>
-
 #include <iostream>
 #include <string>
 #include <boost/asio.hpp>
 
+#include <Rcpp11>
+
 using boost::asio::ip::tcp;
 
-// compile with g++ -std=gnu++11 socket_server.cpp -L/usr/local/lib/ -lboost_system-mt
-
-// TODO: add options to better specify the endpoint.
-tcp::acceptor* create_tcp_server(int port=9090) 
+struct tcp_server
 {
   boost::asio::io_service io_service;
-  return new tcp::acceptor(io_service, tcp::endpoint(tcp::v4(), port));
+  tcp::acceptor acceptor;
+  tcp_server(int port=9090) : 
+    io_service(), 
+    acceptor(io_service, tcp::endpoint(tcp::v4(), port)) {}
+};
+
+// [[Rcpp::export]]
+Rcpp::XPtr<tcp_server> create_tcp_server(int port=9090)
+{
+  return XPtr<tcp_server>(new tcp_server(port));
 }
 
-tcp::socket* get_next_request(tcp::acceptor* server)
+// [[Rcpp::export]]
+Rcpp::XPtr<tcp::socket> get_next_request(SEXP p_server)
 {
-  tcp::socket *socket = new tcp::socket(server->get_io_service());
-  server->accept(*socket);
-  return socket;
+  Rcpp::XPtr<tcp_server> server(p_server);
+  tcp::socket *socket = new tcp::socket(server->io_service);
+  server->acceptor.accept(*socket);
+  return XPtr<tcp::socket>(socket);
 }
 
-int main()
+// [[Rcpp::export]]
+std::string get_message(SEXP p_socket)
 {
-  try
-  {
-    std::string message;
-    tcp::acceptor *a = create_tcp_server();
-    tcp::socket *s = get_next_request(a);
-    message.resize(10000);
-    s->receive(boost::asio::buffer(&message[0], message.size()));
-    std::cout << "message is: " << message << std::endl;
-    message = "ACK";
-    s->send(boost::asio::buffer(&message[0], message.size()));
-  }
-  catch (std::exception& e)
-  {
-    std::cerr << e.what() << std::endl;
-  }
-  return 0;
+  Rcpp::XPtr<tcp::socket> sock(p_socket);
+  std::string message;
+  message.resize(10000);
+  sock->receive(boost::asio::buffer(&message[0], message.size()));
+  return message;
 }
+
+// [[Rcpp::export]]
+void send_message(SEXP p_socket, std::string message)
+{
+  Rcpp::XPtr<tcp::socket> sock(p_socket);
+  sock->send(boost::asio::buffer(&message[0], message.size()));
+}
+
