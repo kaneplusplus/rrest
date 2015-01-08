@@ -26,24 +26,27 @@ parse_html_request = function(str) {
 
 call_gen = function(fun_env) {
   function(req) {
-    ret = toJSON(
+#    ret = toJSON({
       tryCatch({
-        fun <- fun_env[[req[['fun']]]]
+        fun = fun_env[[req[['fun']]]]
         print(fun)
         if(!is.null(fun)){
-          body <- req[['body']]
+          body = req[['body']]
           if(!is.null(body)) {
             class(body) <- c(class(body), class(req))
           }
-          success(toJSON(fun(body)))
+          ret = success(toJSON(fun(body)))
         } else { 
-          method_not_found()
+          ret= method_not_found()
         }
+        ret
       }, error = function(e) {
         throw_error()
       })
-    )
-    sub("\n", "", ret)
+#    })
+#    ret = sub("\n", "", ret)
+    print(ret)
+    ret
   }
 }
 
