@@ -7,21 +7,21 @@ randomNormal  <- function(p) { UseMethod('randomNormal', p) }
 
 randomUniform.POST <- function(p){
 	p <- lapply(p, as.numeric)
-	runif(p$n)
+	list(val = runif(p$n))
 }
 randomUniform.GET <- function(p) {
-	runif(1)
+	list(val = runif(1))
 }
 randomUniform.default <- function(p) {
 	randomUniform.GET()
 }
 
 randomNormal.POST <- function(p){
-  p <- lapply(p, as.numeric)
-  rnorm(p$n)
+	p <- lapply(p, as.numeric)
+	list(val = rnorm(p$n))
 }
 randomNormal.GET <- function(p) {
-	rnorm(1)
+	list(val = rnorm(1))
 }
 randomNormal.default <- function(p) {
 	randomNormal.GET()
