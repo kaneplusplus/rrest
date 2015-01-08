@@ -4,11 +4,9 @@ library(RJSONIO)
 source('responses.R')
 
 parse_html_request = function(str) {  
-  # I wonder if we should separate parsing from reading
-  # because I'm guessing HTTP requests are going to look
-  # the same no matter how we actuall receive them (sockets, 
-  # httpuv, whatever)
+  print(str)
   meth     = unlist(strsplit(str, ' /'))[[1]]
+  print(meth)
   endpoint = unlist(regmatches(str, gregexpr('/[^ ]*', str)))[1]
   endpoint = gsub('^/', '', endpoint)
   body     = unlist(strsplit(str, "\r\n"))
@@ -20,7 +18,8 @@ parse_html_request = function(str) {
   }
 
   req = list(fun = endpoint, body = body)
-  class(req) = c('character', meth)
+  class(req) = c(meth, 'character')
+  print(req)
   req
 }
 
@@ -29,13 +28,13 @@ call_gen = function(fun_env) {
 #    ret = toJSON({
       tryCatch({
         fun = fun_env[[req[['fun']]]]
-        print(fun)
         if(!is.null(fun)){
           body = req[['body']]
           if(!is.null(body)) {
             class(body) <- c(class(body), class(req))
           }
           ret = success(toJSON(fun(body)))
+		  print(ret)
         } else { 
           ret= method_not_found()
         }
@@ -45,8 +44,8 @@ call_gen = function(fun_env) {
       })
 #    })
 #    ret = sub("\n", "", ret)
-    print(ret)
-    ret
+    # print(ret)
+    # ret
   }
 }
 
