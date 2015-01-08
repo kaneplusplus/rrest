@@ -1,23 +1,26 @@
+
 success <- function(resp) {
-	list(
-	  status  = 200L,
-	  headers = list('Content-Type' = 'JSON'),
-	  body    = resp
-	)	
+  paste("HTTP/1.1 200 OK",
+        "Content-Type: text/json",
+        paste("Content-Length:", nchar(resp, type="bytes")+4),
+        "",
+        "{", resp, "}\n", sep="\n") 
 }
 
 method_not_found <- function() {
-	list(
-	  status  = 405,
-	  headers = list('Content-Type' = 'text'),
-	  body    = "Method not allowed"
-	)		
+  resp = "Method not allowed"
+  paste("HTTP/1.1 405 Method Not Allowed",
+        "Content-Type: text",
+        paste("Content-Length:", nchar(resp, type="bytes")),
+        "",
+        "{", resp, "}\n", sep="\n")
 }
 
 throw_error <- function() {
-	list(
-	  status  = 500,
-	  headers = list('Content-Type' = 'text'),
-	  body    = "Internal server error occured"
-	)
+  resp = "Internal server error occured"
+  paste("HTTP/1.1 500 Internal Server Error Occured",
+        "Content-Type: text",
+        paste("Content-Length:", nchar(resp, type="bytes")),
+        "",
+        "{", resp, "}\n", sep="\n")
 }

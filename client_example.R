@@ -18,6 +18,7 @@ cat(h$value())
 
 # Convert to R object -- this isn't working right now,
 # because the first '{' is getting dropped
+print(h$value())
 x <- fromJSON(h$value())
 
 
