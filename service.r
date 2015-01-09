@@ -56,6 +56,7 @@ start_service = function(conn, call, parse_input=function(x) x,
   if (parallel == 1) {
     while(i <= max_num_requests) {
       req = next_request(conn)
+      print(req)
       i = i+1
       call_input = parse_input(req$str)
       call_ret = call(call_input)
