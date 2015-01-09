@@ -10,8 +10,6 @@ struct tcp_server
 {
   boost::asio::io_service io_service;
   tcp::acceptor acceptor;
-  fd_set file_descriptor_set;
-  bool interrupted;
   tcp_server(int port=9090) : 
     io_service(), 
     acceptor(io_service, tcp::endpoint(tcp::v4(), port)), interrupted(false) {}
@@ -26,43 +24,23 @@ Rcpp::XPtr<tcp_server> create_tcp_server(int port=9090)
 // [[Rcpp::export]]
 void shutdown_tcp_server(SEXP p_server)
 {
+  // TODO: Finish this.
   Rcpp::XPtr<tcp_server> server(p_server);
-}
-
-static tcp_server *requesting_server;
-
-void handle_signal(int)
-{
-  std::cout << "Here!\n";
-  requesting_server->interrupted = true;
-  std::string interrupt_message("signal interrupt");
-  write(requesting_server->acceptor.native()+1, &(interrupt_message[0]), 
-        interrupt_message.size());
 }
 
 // [[Rcpp::export]]
 Rcpp::XPtr<tcp::socket> asio_service_next_request(SEXP p_server)
 {
   Rcpp::XPtr<tcp_server> server(p_server);
-  requesting_server = &(*server);
   tcp::socket *socket = new tcp::socket(server->io_service);
-  //struct timeval time_struct;
-
-  //time_struct.tv_sec = 10;
-  //time_struct.tv_usec = 0;
-  FD_ZERO(&(server->file_descriptor_set));
-
-  server->interrupted = false;
+ 
+  fd_set file_descriptor_set; 
+  FD_ZERO(&file_descriptor_set);
 
   int native_socket_server = server->acceptor.native();
-
   FD_SET(native_socket_server, &(server->file_descriptor_set));
-
   select(native_socket_server+1, &(server->file_descriptor_set), NULL, 
-         NULL, NULL); //&time_struct);
-
-  //
-  FD_ISSET(native_socket_server, &(server->file_descriptor_set));
+         NULL, NULL); 
 
   if(errno == EINTR)
   { 
